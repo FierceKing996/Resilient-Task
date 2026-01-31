@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resilient Task Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="app.js" defer></script>
+</head>
+<body>
+
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-card">
+            <h2>IDENTIFICATION</h2>
+            <p>Enter your Agent Name to access the secure dashboard.</p>
+            <input type="text" id="username-input" placeholder="Codename..." autocomplete="off">
+            <button id="btn-login">ACCESS SYSTEM</button>
+        </div>
+    </div>
+
+    <dialog id="edit-modal" class="modal">
+        <h3 style="color: #58a6ff; margin-top:0;">REDEFINE MISSION</h3>
+        
+        <label style="color:#8b949e; font-size:0.8rem;">Mission Name / Caption</label>
+        <input type="text" id="edit-input" class="modal-input" autocomplete="off">
+        
+        <div id="edit-image-section" style="margin-top: 15px;">
+            <label style="color:#8b949e; font-size:0.8rem; display:block; margin-bottom:5px;">Update Image Evidence</label>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <img id="edit-image-preview" src="" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; display:none; border: 1px solid #30363d;">
+                
+                <input type="file" id="edit-file-input" accept="image/*" style="color: white; font-size: 0.9rem;">
+            </div>
+        </div>
+    
+        <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+            <button id="btn-cancel-edit" class="btn-secondary">CANCEL</button>
+            <button id="btn-save-edit" class="btn-primary">CONFIRM UPDATE</button>
+        </div>
+    </dialog>
+
+    <header class="connectivity-hub">
+        <div class="status-panel">
+            <div class="status-item">
+                <div class="led" id="led-lp"></div>
+                <span>L-Poll</span>
+            </div>
+            <div class="status-item">
+                <div class="led" id="led-sp"></div>
+                <span>S-Poll</span>
+            </div>
+            <div class="status-item">
+                <div class="led" id="led-ws"></div>
+                <span>WS</span>
+            </div>
+            <div class="status-item">
+                <div class="led" id="led-sse"></div>
+                <span>SSE</span>
+            </div>
+        </div>
+
+        <div class="worker-monitor hidden" id="worker-progress-container">
+            <span id="worker-status-label" class="monitor-label">SYSTEM READY</span>
+        <div class="progress-bar">
+            <div class="fill" id="worker-progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="header-controls">
+            <button id="btn-diagnostics">Diagnostics</button>
+            <input type="text" id="search-bar" placeholder="Search (SessionStorage)...">
+            <label class="toggle-switch">
+                <input type="checkbox" id="toggle-dark-mode" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </header>
+
+    <main class="dashboard-body">
+        
+        <section class="input-area">
+            <div class="input-wrapper">
+                <input type="text" id="task-input" placeholder="Enter new mission-critical task...">
+                
+                <input type="file" id="file-input" accept="image/*" style="display: none;">
+                
+                <button id="btn-add-img" class="btn-icon" title="Upload Image" style="background:none; border:none; cursor:pointer; font-size: 1.5rem;">📷</button>
+            </div>
+            <button id="btn-add-task">ADD TASK</button>
+        </section>
+
+        <section class="task-container">
+            <h3 style="margin-bottom: 10px; color: var(--accent-blue);">Active Missions</h3>
+            <ul id="task-list" class="task-list"></ul>
+
+            <h3 style="margin-top: 30px; color: var(--text-secondary);">Completed Log</h3>
+            <ul id="completed-task-list" class="task-list completed-list"></ul>
+        </section>
+
+        <dialog id="info-modal" class="modal">
+            <h3 id="modal-title">Task Meta-Data</h3>
+            <div id="modal-content"></div>
+            <form method="dialog">
+                <button class="btn-warning" style="margin-top: 15px;">Close</button>
+            </form>
+        </dialog>
+
+    </main>
+
+    <section style="text-align: center; padding: 20px; background: #1a1d21; margin-top: 20px;">
+        <h4 style="margin:0; color: #888;">GLOBAL SYSTEM STATS</h4>
+        <div id="global-stats" style="font-size: 2rem; color: #00e676;">Connecting...</div>
+        <small>Tasks completed by all users globally</small>
+    </section>
+
+    <div id="notification-area" style="position: fixed; top: 20px; right: 20px; z-index: 1000; pointer-events: none;"></div>
+
+    <footer class="controls-footer">
+        <button id="btn-archive" class="btn-warning">Archive All (Worker)</button>
+        <button id="btn-unarchive" class="btn-primary">Unarchive (Decrypt)</button>
+        <button id="btn-stress" class="btn-danger">Stress Test (1k Nodes)</button>
+    </footer>
+
+<dialog id="share-modal" class="modal-overlay">
+    <div class="modal-glass">
+        <h3 class="modal-title">📡 SECURE TRANSMISSION</h3>
+        <p class="modal-subtitle">Select an active agent from the directory:</p>
+        
+        <ul id="agent-list-ui" class="agent-list"></ul>
+
+        <div class="modal-actions">
+            <button id="btn-close-share" class="btn btn-danger">ABORT MISSION</button>
+        </div>
+    </div>
+</dialog>
+
+</body>
+</html>
