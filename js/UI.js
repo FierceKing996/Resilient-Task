@@ -3,7 +3,7 @@ import { addTaskToDB, deleteTaskFromDB, updateDB, db, getAllTasksFromDB } from '
 import { blobToBase64 } from './utilities.js';
 import { sendSocketMessage, startNetwork } from './Network.js';
 import { apiCreateTask, apiUpdateTask, apiDeleteTask, apiGetTasks } from './api.js';
-
+import { apiLogin, apiRegister, setAuthToken } from './api.js';
 // --- DOM ELEMENTS ---
 export const loginOverlay = document.getElementById('login-overlay');
 export const usernameInput = document.getElementById('username-input');
@@ -46,14 +46,42 @@ export function resetSharingFlow() { isSharingFlow = false; }
 
 // --- INITIALIZATION ---
 export async function initUI() {
-    if (localStorage.getItem('username')) {
-        currentUser = localStorage.getItem('username');
+    const token = localStorage.getItem('authToken');
+    const savedUser = localStorage.getItem('username');
+
+    if (token && savedUser) {
+        currentUser = savedUser;
+        setAuthToken(token); 
         if(loginOverlay) loginOverlay.classList.add('hidden');
-        const tasks = await getAllTasksFromDB();
+        
+        // Load data
+        const tasks = await getAllTasksFromDB(); 
         tasks.forEach(t => addTaskToDOM(t));
+        
+        // Sync fresh from server
+        const serverTasks = await apiGetTasks(); 
+        // (Optional: Merge logic here, for now just log it)
+        console.log("Server tasks loaded:", serverTasks.length);
+        
         startNetwork();
+    } else {
+        // Show Login
+        if(loginOverlay) loginOverlay.classList.remove('hidden');
+        injectPasswordInput(); // Add password field programmatically
     }
     setupEventListeners();
+}
+
+function injectPasswordInput() {
+    // Quick hack to add a password field if it doesn't exist in your HTML
+    if (!document.getElementById('password-input')) {
+        const input = document.createElement('input');
+        input.type = 'password';
+        input.id = 'password-input';
+        input.placeholder = 'Enter Password';
+        input.className = 'login-input'; // Match your username-input style
+        usernameInput.parentNode.insertBefore(input, btnLogin);
+    }
 }
 
 // --- EVENT LISTENERS ---
@@ -62,13 +90,24 @@ function setupEventListeners() {
     if (btnLogin) {
         btnLogin.addEventListener('click', async () => {
             const name = usernameInput.value.trim();
-            if (name) {
-                currentUser = name;
-                localStorage.setItem('username', currentUser);
-                loginOverlay.classList.add('hidden');
-                const tasks = await getAllTasksFromDB();
-                tasks.forEach(t => addTaskToDOM(t));
-                startNetwork();
+            const pass = document.getElementById('password-input').value.trim();
+            
+            if (name && pass) {
+                try {
+                    // Try to Login
+                    const data = await apiLogin(name, pass);
+                    finishLogin(data.token, data.username);
+                } catch (err) {
+                    // If login fails, try to Register (Auto-register for simplicity)
+                    try {
+                        await apiRegister(name, pass);
+                        const data = await apiLogin(name, pass);
+                        finishLogin(data.token, data.username);
+                        showNotification(" Account Created!");
+                    } catch (regErr) {
+                        showNotification(" Login Failed");
+                    }
+                }
             }
         });
     }
@@ -218,6 +257,16 @@ function setupEventListeners() {
             };
         });
     }
+}
+
+function finishLogin(token, username) {
+    currentUser = username;
+    localStorage.setItem('username', currentUser);
+    setAuthToken(token); // Save token
+    
+    loginOverlay.classList.add('hidden');
+    startNetwork();
+    showNotification(`Welcome back, Agent ${username}`);
 }
 
 

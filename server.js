@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const server = http.createServer(app);
@@ -16,11 +17,56 @@ app.use(express.json());
 let globalTasks = []; 
 let globalTaskCount = 0;
 const activeAgents = new Map();
+const SECRET_KEY = "my_super_secret_mission_key"; 
+const users = [];
+
+//Auth
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+
+    if (!token) return res.status(401).json({ error: "Access Denied: No Token" });
+
+    jwt.verify(token, SECRET_KEY, (err, user) => {
+        if (err) return res.status(403).json({ error: "Invalid Token" });
+        req.user = user; // Attach user info to the request
+        next();
+    });
+}
+
+// 1. REGISTER (Simple)
+app.post('/api/register', (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Missing fields" });
+    
+    // Check if user exists
+    if (users.find(u => u.username === username)) {
+        return res.status(400).json({ error: "User already exists" });
+    }
+
+    users.push({ username, password }); // In real app, HASH the password!
+    res.status(201).json({ message: "Agent Registered" });
+});
+
+// 2. LOGIN (Issues Token)
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+    const user = users.find(u => u.username === username && u.password === password);
+
+    if (!user) return res.status(400).json({ error: "Invalid Credentials" });
+
+    // Generate Token (Expires in 1 hour)
+    const token = jwt.sign({ username: user.username }, SECRET_KEY, { expiresIn: '1h' });
+    res.json({ token, username: user.username });
+});
 
 
 // 1. CREATE (POST) - Replaces 'add_task' and 'sync_task' (creation part)
-app.post('/api/tasks', (req, res) => {
+app.post('/api/tasks',authenticateToken, (req, res) => {
     const task = req.body;
+
+    task.username = req.user.username;
+
     if (!task || !task.id) return res.status(400).json({ error: "Invalid Data" });
 
     // Logic: Add to server memory
@@ -47,7 +93,7 @@ app.post('/api/tasks', (req, res) => {
 });
 
 // 2. READ (GET) - Fetch tasks for a specific user
-app.get('/api/tasks', (req, res) => {
+app.get('/api/tasks', authenticateToken , (req, res) => {
     const username = req.query.username;
     // Return only tasks belonging to this user
     const tasks = username ? globalTasks.filter(t => t.username === username) : [];
@@ -55,7 +101,7 @@ app.get('/api/tasks', (req, res) => {
 });
 
 // 3. UPDATE (PUT) - Replaces 'toggle_task' and 'edit_task'
-app.put('/api/tasks/:id', (req, res) => {
+app.put('/api/tasks/:id', authenticateToken ,(req, res) => {
     const { id } = req.params;
     const updates = req.body;
     
@@ -81,7 +127,7 @@ app.put('/api/tasks/:id', (req, res) => {
 });
 
 // 4. DELETE (DELETE) - Replaces 'delete_task'
-app.delete('/api/tasks/:id', (req, res) => {
+app.delete('/api/tasks/:id', authenticateToken, (req, res) => {
     const { id } = req.params;
     const initialLength = globalTasks.length;
     
