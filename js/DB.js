@@ -4,7 +4,7 @@ export let db; // Export db instance so others can check if it exists
 
 export function initDB() {
     return new Promise((resolve, reject) => {
-        console.log(`💽 Initializing Database...`);
+        console.log(` Initializing Database...`);
         const request = indexedDB.open('ResilientTaskDB', 4);
 
         request.onupgradeneeded = (e) => {
@@ -19,7 +19,7 @@ export function initDB() {
 
         request.onsuccess = (e) => {
             db = e.target.result;
-            console.log("✅ Database Engine Online");
+            console.log(" Database Online");
             resolve(db);
         };
 
